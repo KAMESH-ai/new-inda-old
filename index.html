@@ -26,7 +26,7 @@ main{max-width:1200px;margin:-45px auto 0;padding:0 5vw 80px;position:relative;z
 .panel{background:var(--paper);border:1px solid var(--line);border-radius:15px;overflow:hidden;box-shadow:var(--shadow)}
 .controls{padding:13px 15px;background:#faf7f0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:15px}.tabs{display:flex;gap:6px;flex-wrap:wrap}.tab{border:1px solid transparent;background:transparent;color:#687670;padding:8px 11px;border-radius:4px;font:600 .69rem "DM Sans";cursor:pointer}.tab:hover{border-color:#cdbfae}.tab.active{background:var(--forest);color:white}.hint{font-size:.61rem;letter-spacing:.1em;color:#89948e;align-self:center;white-space:nowrap}
 .map{height:500px;position:relative;overflow:hidden;background:#ddd2c0}
-.map-canvas{position:absolute;inset:0;background-image:linear-gradient(rgba(250,245,235,.2),rgba(250,245,235,.2)),url("https://simplemaps.com/static/svg/country/in/admin1/in.svg");background-size:contain;background-repeat:no-repeat;background-position:center;background-color:#ded5c7}
+.map-canvas{position:absolute;inset:0;background-image:linear-gradient(rgba(250,245,235,.2),rgba(250,245,235,.2)),url("https://simplemaps.com/static/svg/country/in/admin1/in.svg");background-size:58% auto;background-repeat:no-repeat;background-position:center;background-color:#ded5c7}
 .map-canvas:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,transparent 30%,rgba(26,52,45,.06));pointer-events:none}
 .map-title{position:absolute;top:16px;left:17px;z-index:3;background:#fffdf7e8;padding:8px 11px;border-left:3px solid var(--saffron);font-size:.62rem;letter-spacing:.12em;font-weight:800;color:#4f625c}
 .pin{position:absolute;z-index:5;width:18px;height:18px;border-radius:50%;background:var(--saffron);border:3px solid #fff;box-shadow:0 3px 12px #172f2a55;cursor:pointer;transform:translate(-50%,-50%);transition:.18s}.pin:hover{transform:translate(-50%,-50%) scale(1.35);background:var(--rose)}
@@ -58,7 +58,7 @@ footer{background:var(--forest);color:#b8cbc5;text-align:center;padding:30px;fon
       <div class="controls"><div class="tabs" id="f1">
         <button class="tab active" data-v="all">All</button><button class="tab" data-v="ancient">Ancient</button><button class="tab" data-v="medieval">Medieval</button><button class="tab" data-v="modern">Modern</button><button class="tab" data-v="folk">Folk & Tribal</button>
       </div><span class="hint">CLICK A PLACE</span></div>
-      <div id="map1" class="map"><div class="map-canvas"></div><div class="map-title">HERITAGE LANDMARKS</div><div class="map-credit">India SVG base map • interactive pins</div></div>
+      <div id="map1" class="map"><div class="map-canvas"></div><div class="map-title">HERITAGE LANDMARKS</div><div class="map-credit">India reference map • interactive pins</div></div>
       <div class="info"><div class="story"><small id="p1">Pick a landmark</small><h3 id="t1">Explore a heritage landmark</h3><p id="x1">Select a marker to see why the site matters to Indian visual culture and architecture.</p></div><div class="facts"><h4>Site notes</h4><ul id="q1"><li>Cultural period</li><li>Visual tradition</li><li>Key feature</li></ul></div></div>
     </div>
   </section>
@@ -69,7 +69,7 @@ footer{background:var(--forest);color:#b8cbc5;text-align:center;padding:30px;fon
       <div class="controls"><div class="tabs" id="f2">
         <button class="tab active" data-v="all">All styles</button><button class="tab" data-v="madhubani">Phad</button><button class="tab" data-v="warli">Kalamkari</button><button class="tab" data-v="pattachitra">Cheriyal</button><button class="tab" data-v="kalighat">Rogan</button><button class="tab" data-v="miniature">Gond</button>
       </div><span class="hint">CLICK A PLACE</span></div>
-      <div id="map2" class="map"><div class="map-canvas"></div><div class="map-title">PAINTING TRADITIONS</div><div class="map-credit">India SVG base map • interactive pins</div></div>
+      <div id="map2" class="map"><div class="map-canvas"></div><div class="map-title">PAINTING TRADITIONS</div><div class="map-credit">India reference map • interactive pins</div></div>
       <div class="info"><div class="story"><small id="p2">Pick a painting practice</small><h3 id="t2">Explore a painting practice</h3><p id="x2">Select a marker to compare subjects, materials and the community context of a regional painting practice.</p></div><div class="facts"><h4>Practice notes</h4><ul id="q2"><li>Common subjects</li><li>Technique</li><li>Material & setting</li></ul></div></div>
     </div>
     <div class="cards">
@@ -103,25 +103,43 @@ const S=[
 ];
 
 
-function project(lon,lat){
-  // Approximate placement matching the SVG's India-wide extent.
-  const x=8+(lon-68.0)/(29.5)*84;
-  const y=91-(lat-7)/(29.5)*82;
-  return [Math.max(3,Math.min(97,x)),Math.max(5,Math.min(94,y))];
+
+const MAP_POS = {
+  // Heritage map — tuned to the visible India silhouette.
+  "Sanchi":[36,45], "Mahabalipuram":[43,74], "Hampi":[32,68],
+  "Mysuru":[33,76], "New Delhi":[34,31], "Ahmedabad":[21,51],
+  "Bastar":[48,58], "Kutch":[13,44],
+  // Painting map.
+  "Phad":[30,40], "Rogan":[13,54], "Gond":[48,50],
+  "Cheriyal":[41,60], "Kalamkari":[43,65], "Kerala Mural":[31,79]
+};
+function project(lon,lat,name){
+  if(MAP_POS[name]) return MAP_POS[name];
+  // Fallback for future entries.
+  return [
+    13 + (lon-69.8)*2.87,
+    101.5 - lat*2.2
+  ];
 }
+
 function makeMap(id,data,kind){
   const el=document.getElementById(id), canvas=el.querySelector(".map-canvas");
   function draw(filter){
     canvas.querySelectorAll(".pin,.pin-label").forEach(x=>x.remove());
     data.filter(d=>filter==="all"||d[3]===filter).forEach(d=>{
-      const [x,y]=project(d[2],d[1]);
+      const [x,y]=project(d[2],d[1],d[0]);
       const pin=document.createElement("button");
       pin.className="pin";pin.style.left=x+"%";pin.style.top=y+"%";pin.title=d[0];
       pin.setAttribute("aria-label",d[0]);
       pin.onclick=()=>show(d,kind);
       canvas.appendChild(pin);
       const lab=document.createElement("span");
-      lab.className="pin-label";lab.style.left=x+"%";lab.style.top=y+"%";lab.textContent=d[0];
+      lab.className="pin-label";
+      lab.style.left=x+"%";lab.style.top=y+"%";
+      if(x < 20){ lab.style.transform="translate(12px,-50%)"; }
+      else if(x > 70){ lab.style.transform="translate(-110%,-50%)"; }
+      else { lab.style.transform="translate(12px,-50%)"; }
+      lab.textContent=d[0];
       canvas.appendChild(lab);
     });
   }
